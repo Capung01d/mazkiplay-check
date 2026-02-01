@@ -260,19 +260,34 @@
 
         initAuth();
 
-        // UI Logic
+        // UI Logic - Sistem Login Diperbaiki
         window.auth = () => {
-            const val = document.getElementById('key-input').value;
-            if(val === "Kolkinajah12") {
-                document.getElementById('login-screen').style.display = 'none';
+            const inputField = document.getElementById('key-input');
+            const val = inputField.value.trim(); // Menghapus spasi yang tidak sengaja
+            
+            // Password baru sesuai permintaan
+            const SECURE_KEY = "211421211421"; 
+
+            if(val === SECURE_KEY) {
+                document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-dashboard').classList.remove('hidden');
                 window.nav('loc');
             } else {
                 const err = document.getElementById('auth-error');
                 err.style.opacity = "1";
-                setTimeout(() => err.style.opacity = "0", 2000);
+                inputField.classList.add('border-red-600', 'shake');
+                setTimeout(() => {
+                    err.style.opacity = "0";
+                    inputField.classList.remove('border-red-600', 'shake');
+                }, 2000);
             }
         };
+
+        // Tambahkan event listener untuk tombol 'Enter' agar lebih user-friendly
+        document.getElementById('key-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.auth();
+        });
+
         document.getElementById('auth-btn').onclick = window.auth;
 
         window.nav = (id) => {
