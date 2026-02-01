@@ -109,12 +109,32 @@
             scrollbar-width: thin;
             scrollbar-color: var(--primary-red) transparent;
         }
+
+        /* Loading Animation */
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center p-0 md:p-6">
     <div class="bg-matrix"></div>
     <div class="grid-pattern"></div>
     <div class="scanline"></div>
+
+    <!-- NOTIFICATION SYSTEM -->
+    <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] w-full max-w-xs transition-all pointer-events-none"></div>
 
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="w-full max-w-md z-50 px-4">
@@ -124,17 +144,20 @@
                     <span class="text-3xl">🛡️</span>
                 </div>
                 <h1 class="cyber-font text-2xl font-black text-white mb-1">MAZKIPLAY CORE</h1>
-                <p class="text-red-500 mono text-[10px] tracking-[0.3em] uppercase">Mobile Protocol V3.0</p>
+                <p class="text-red-500 mono text-[10px] tracking-[0.3em] uppercase">Security Protocol V4.0</p>
             </div>
 
             <div class="space-y-4">
-                <input type="password" id="key-input" placeholder="ACCESS KEY" 
-                    class="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-4 text-center mono text-red-500 focus:outline-none focus:border-red-600 transition-all text-base">
-                <button id="auth-btn" class="w-full cyber-btn py-4 rounded-xl text-base shadow-lg shadow-red-900/20">
-                    ACCESS SYSTEM
+                <div class="relative">
+                    <input type="password" id="key-input" placeholder="ACCESS KEY" 
+                        class="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-4 text-center mono text-red-500 focus:outline-none focus:border-red-600 transition-all text-base">
+                </div>
+                <button id="auth-btn" class="w-full cyber-btn py-4 rounded-xl text-base shadow-lg shadow-red-900/20 flex items-center justify-center gap-3">
+                    <span id="btn-text">ACCESS SYSTEM</span>
+                    <span id="btn-loader" class="hidden loader"></span>
                 </button>
             </div>
-            <p id="auth-error" class="text-red-600 text-[10px] mt-4 opacity-0 transition uppercase font-bold">Access Denied</p>
+            <p id="auth-status-text" class="text-gray-500 text-[10px] mt-4 opacity-0 transition uppercase font-bold mono">Processing...</p>
         </div>
     </div>
 
@@ -216,12 +239,7 @@
 
         // CONFIGURATION
         const CONFIG = {
-            /** * 🔴 [PENTING] MASUKKAN GEMINI API KEY ANDA DI SINI! 🔴
-             * Contoh: apiKey: "AIzaSy..." 
-             */
             apiKey: "AIzaSyDINRKcVKNFIrxWUoyeSg9R03IYCHGR_DU", 
-            /** 🔴 [PENTING] MASUKKAN GEMINI API KEY ANDA DI ATAS! 🔴 */
-
             ABSTRACT_PHONE_KEY: "23ed5b5d4b6f407495cea0dce6aa140a",
             ABSTRACT_EMAIL_KEY: "fa6b55dfb18f4e5fbbea2aabd8bcb6d5"
         };
@@ -236,7 +254,6 @@
         let currentUser = null;
         let currentBase64Image = null;
 
-        // Auth Process
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -252,7 +269,7 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('user-status').innerText = "Encrypted Connection: " + user.uid.substring(0, 8);
+                document.getElementById('user-status').innerText = "Encrypted: " + user.uid.substring(0, 8);
                 document.getElementById('user-status').classList.replace('text-gray-500', 'text-green-500');
                 listenToChat();
             }
@@ -260,30 +277,73 @@
 
         initAuth();
 
-        // UI Logic - Sistem Login Diperbaiki
-        window.auth = () => {
-            const inputField = document.getElementById('key-input');
-            const val = inputField.value.trim(); // Menghapus spasi yang tidak sengaja
+        // Helper: Toast Notification
+        const showToast = (msg, type = 'error') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-4 mb-2 rounded-xl text-xs font-bold mono shadow-2xl transition-all translate-y-[-20px] opacity-0 flex items-center gap-3 border ${type === 'error' ? 'bg-red-950 border-red-600 text-red-400' : 'bg-green-950 border-green-600 text-green-400'}`;
+            toast.innerHTML = `<span>${type === 'error' ? '❌' : '✅'}</span> <span>${msg}</span>`;
+            container.appendChild(toast);
             
-            // Password baru sesuai permintaan
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+            }, 100);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        };
+
+        // UI Logic - SISTEM LOGIN SEMPURNA
+        window.auth = async () => {
+            const inputField = document.getElementById('key-input');
+            const btnText = document.getElementById('btn-text');
+            const btnLoader = document.getElementById('btn-loader');
+            const statusText = document.getElementById('auth-status-text');
+            
+            const val = inputField.value.trim();
             const SECURE_KEY = "211421211421"; 
 
+            // 1. Reset & Start Loading
+            inputField.blur();
+            btnText.innerText = "AUTHENTICATING";
+            btnLoader.classList.remove('hidden');
+            statusText.style.opacity = "1";
+            statusText.innerText = "Encrypting packet...";
+
+            // Simulasi Delay Loading agar terlihat autentik
+            await new Promise(r => setTimeout(r, 800));
+
             if(val === SECURE_KEY) {
+                // 2. Berhasil
+                statusText.innerText = "KEY VALID. REDIRECTING...";
+                statusText.classList.replace('text-gray-500', 'text-green-500');
+                showToast("ACCESS GRANTED - SYSTEM READY", "success");
+                
+                await new Promise(r => setTimeout(r, 1000));
+                
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-dashboard').classList.remove('hidden');
                 window.nav('loc');
             } else {
-                const err = document.getElementById('auth-error');
-                err.style.opacity = "1";
-                inputField.classList.add('border-red-600', 'shake');
+                // 3. Gagal
+                btnText.innerText = "ACCESS SYSTEM";
+                btnLoader.classList.add('hidden');
+                statusText.innerText = "ACCESS DENIED";
+                statusText.classList.replace('text-gray-500', 'text-red-500');
+                
+                showToast("INVALID ACCESS KEY! ACCESS DENIED.", "error");
+                
+                inputField.classList.add('border-red-600');
                 setTimeout(() => {
-                    err.style.opacity = "0";
-                    inputField.classList.remove('border-red-600', 'shake');
+                    statusText.style.opacity = "0";
+                    inputField.classList.remove('border-red-600');
+                    statusText.classList.replace('text-red-500', 'text-gray-500');
                 }, 2000);
             }
         };
 
-        // Tambahkan event listener untuk tombol 'Enter' agar lebih user-friendly
         document.getElementById('key-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.auth();
         });
@@ -320,7 +380,6 @@
             }, (err) => console.error("Firestore Error:", err));
         }
 
-        // Feature Logic
         window.previewImage = (input) => {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
@@ -338,7 +397,6 @@
             const text = msgInput.value;
             if (!text && !currentBase64Image) return;
 
-            // Save to Firestore
             await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'chats'), {
                 role: 'user',
                 text: text,
@@ -352,11 +410,10 @@
             currentBase64Image = null;
             document.getElementById('upload-preview-container').classList.add('hidden');
 
-            // Call AI
             if (!CONFIG.apiKey) {
                 await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'chats'), {
                     role: 'ai',
-                    text: "❌ ERROR: API KEY belum diisi di bagian CONFIG. Silakan buka kode dan isi variabel apiKey.",
+                    text: "❌ ERROR: API KEY BELUM DIKONFIGURASI.",
                     timestamp: serverTimestamp()
                 });
                 return;
@@ -372,7 +429,7 @@
                             ...(tempImg ? [{ inlineData: { mimeType: "image/png", data: tempImg } }] : [])
                         ]
                     }],
-                    systemInstruction: { parts: [{ text: "Kamu adalah Mazki AI. Jawab dengan cerdas, teknis, dan keren dalam Bahasa Indonesia." }] }
+                    systemInstruction: { parts: [{ text: "Kamu adalah Mazki AI. Jawab dengan teknis dan keren dalam Bahasa Indonesia." }] }
                 };
 
                 const resp = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
@@ -384,9 +441,7 @@
                     text: aiText,
                     timestamp: serverTimestamp()
                 });
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         };
 
         window.startTracking = async () => {
