@@ -26,7 +26,7 @@
         .cyber-font { font-family: 'Orbitron', sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Animated Background */
+        /* Background Effects */
         .bg-matrix {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: 
@@ -44,7 +44,6 @@
             opacity: 0.3;
         }
 
-        /* Glassmorphism Cards */
         .glass-card {
             background: rgba(15, 15, 15, 0.85);
             backdrop-filter: blur(20px);
@@ -52,7 +51,6 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
         }
 
-        /* Scanned Line Animation */
         .scanline {
             width: 100%; height: 2px;
             background: rgba(255, 0, 0, 0.2);
@@ -79,12 +77,8 @@
             font-weight: bold;
         }
 
-        .cyber-btn:active {
-            transform: scale(0.95);
-            background: var(--primary-red);
-        }
+        .cyber-btn:active { transform: scale(0.95); background: var(--primary-red); }
 
-        /* AI Bubbles */
         .ai-bubble {
             background: rgba(0, 242, 255, 0.05);
             border-left: 3px solid var(--cyber-blue);
@@ -104,30 +98,13 @@
             word-wrap: break-word;
         }
 
-        /* Mobile specific adjustments */
         @media (max-width: 768px) {
             body { overflow-y: auto; height: auto; min-height: 100vh; }
-            #main-dashboard { 
-                flex-direction: column; 
-                height: auto; 
-                padding-bottom: 80px; /* Space for fixed navigation if needed */
-            }
-            aside { 
-                width: 100%; 
-                order: 2;
-                margin-top: 1rem;
-            }
-            main { 
-                width: 100%; 
-                order: 1;
-                min-height: 60vh;
-                padding: 1.5rem !important;
-            }
-            .cyber-font { font-size: 1.1rem; }
-            #login-screen { padding: 1rem; }
+            #main-dashboard { flex-direction: column; height: auto; padding-bottom: 80px; }
+            aside { width: 100%; order: 2; margin-top: 1rem; }
+            main { width: 100%; order: 1; min-height: 60vh; padding: 1.5rem !important; }
         }
 
-        /* Smooth scrolling for chat */
         .custom-scroll {
             scrollbar-width: thin;
             scrollbar-color: var(--primary-red) transparent;
@@ -153,7 +130,7 @@
             <div class="space-y-4">
                 <input type="password" id="key-input" placeholder="ACCESS KEY" 
                     class="w-full bg-black/80 border border-white/10 rounded-xl px-4 py-4 text-center mono text-red-500 focus:outline-none focus:border-red-600 transition-all text-base">
-                <button onclick="auth()" class="w-full cyber-btn py-4 rounded-xl text-base shadow-lg shadow-red-900/20">
+                <button id="auth-btn" class="w-full cyber-btn py-4 rounded-xl text-base shadow-lg shadow-red-900/20">
                     ACCESS SYSTEM
                 </button>
             </div>
@@ -164,299 +141,260 @@
     <!-- MAIN INTERFACE -->
     <div id="main-dashboard" class="hidden w-full max-w-7xl md:h-[90vh] flex flex-col md:flex-row gap-4 relative z-50 p-2 md:p-0">
         
-        <!-- SIDEBAR / NAVIGATION -->
         <aside class="w-full md:w-64 glass-card rounded-2xl md:rounded-3xl p-4 flex flex-col">
             <div class="flex items-center gap-3 mb-6 md:mb-10 pb-4 border-b border-white/5">
                 <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center cyber-font text-xl font-bold">M</div>
                 <div>
                     <h2 class="cyber-font text-sm font-bold text-white">MAZKI V.3</h2>
-                    <span class="text-[8px] text-green-500 mono font-bold uppercase">Online</span>
+                    <span id="user-status" class="text-[8px] text-gray-500 mono font-bold uppercase">Connecting...</span>
                 </div>
             </div>
 
-            <!-- Scrollable Nav on Mobile -->
             <nav class="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 no-scrollbar">
-                <button onclick="nav('loc')" id="btn-loc" class="nav-btn flex-shrink-0 md:flex-shrink-1 flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all text-xs md:text-sm">
-                    <span>📍</span> <span class="cyber-font whitespace-nowrap">Tracker</span>
+                <button onclick="nav('loc')" id="btn-loc" class="nav-btn flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all text-xs">
+                    <span>📍</span> <span class="cyber-font">Tracker</span>
                 </button>
-                <button onclick="nav('email')" id="btn-email" class="nav-btn flex-shrink-0 md:flex-shrink-1 flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all text-xs md:text-sm">
-                    <span>📧</span> <span class="cyber-font whitespace-nowrap">Email</span>
+                <button onclick="nav('email')" id="btn-email" class="nav-btn flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all text-xs">
+                    <span>📧</span> <span class="cyber-font">Email</span>
                 </button>
-                <button onclick="nav('social')" id="btn-social" class="nav-btn flex-shrink-0 md:flex-shrink-1 flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all text-xs md:text-sm">
-                    <span>👤</span> <span class="cyber-font whitespace-nowrap">OSINT</span>
-                </button>
-                <button onclick="nav('ai')" id="btn-ai" class="nav-btn flex-shrink-0 md:flex-shrink-1 flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all text-xs md:text-sm border border-transparent">
-                    <span>🤖</span> <span class="cyber-font whitespace-nowrap text-blue-400">AI Bot</span>
+                <button onclick="nav('ai')" id="btn-ai" class="nav-btn flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all text-xs">
+                    <span>🤖</span> <span class="cyber-font">AI Bot</span>
                 </button>
             </nav>
         </aside>
 
-        <!-- MAIN CONTENT AREA -->
         <main class="flex-1 glass-card rounded-2xl md:rounded-3xl p-4 md:p-8 flex flex-col relative overflow-hidden min-h-[500px]">
             
-            <!-- Geo Tracker -->
             <section id="sec-loc" class="tab-sec flex-1 flex flex-col">
-                <h2 class="cyber-font text-xl font-bold text-white mb-6 flex items-center gap-3">
-                    <span class="w-1.5 h-6 bg-red-600 rounded-full"></span> GEO TRACKER
-                </h2>
+                <h2 class="cyber-font text-xl font-bold text-white mb-6">📍 GEO TRACKER</h2>
                 <div class="space-y-4">
                     <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
-                        <label class="text-[9px] text-gray-400 uppercase font-bold mb-2 block mono">Target Phone (+62)</label>
-                        <input type="number" id="target-phone" placeholder="812xxxxxx" class="w-full bg-black/60 border border-white/10 p-4 rounded-xl text-red-500 mono outline-none focus:border-red-600 text-lg">
+                        <label class="text-[9px] text-gray-400 uppercase mb-2 block mono">Target Phone</label>
+                        <input type="number" id="target-phone" placeholder="812xxxxxx" class="w-full bg-black/60 border border-white/10 p-4 rounded-xl text-red-500 mono outline-none text-lg">
                         <button onclick="startTracking()" class="w-full cyber-btn mt-4 py-4 rounded-xl text-sm">Execute Tracing</button>
                     </div>
                     <div id="loc-result" class="bg-black/40 p-4 rounded-2xl border border-white/5 mono text-[10px] text-blue-300 min-h-[150px] overflow-auto">
-                        Waiting for coordinates...
+                        Waiting for signal...
                     </div>
                 </div>
             </section>
 
-            <!-- AI CHAT SECTION -->
             <section id="sec-ai" class="tab-sec hidden flex-1 flex flex-col h-full">
-                <h2 class="cyber-font text-xl font-bold text-blue-400 mb-4 flex items-center gap-3">
-                    <span class="w-1.5 h-6 bg-blue-600 rounded-full"></span> MAZKI AI
-                </h2>
-
-                <!-- Chat Display -->
-                <div class="flex-1 bg-black/40 rounded-2xl p-4 mono text-xs border border-white/5 overflow-y-auto mb-4 custom-scroll min-h-[300px]" id="ai-chat">
-                    <div class="ai-bubble">
-                        <span class="text-[9px] text-blue-400 font-bold block mb-1">SYSTEM_INIT</span>
-                        Halo Operator. Mode Red Team aktif. Kirim pesan atau gambar untuk memulai audit.
-                    </div>
-                </div>
+                <h2 class="cyber-font text-xl font-bold text-blue-400 mb-4">🤖 MAZKI AI AUDIT</h2>
+                <div class="flex-1 bg-black/40 rounded-2xl p-4 mono text-xs border border-white/5 overflow-y-auto mb-4 custom-scroll" id="ai-chat"></div>
                 
-                <!-- Image Preview -->
                 <div id="upload-preview-container" class="hidden mb-3">
-                    <div class="relative inline-block">
-                        <img id="image-preview" src="" class="h-24 rounded-lg border-2 border-blue-600">
-                        <button onclick="clearImage()" class="absolute -top-2 -right-2 bg-red-600 rounded-full w-6 h-6 flex items-center justify-center text-white text-xs">✕</button>
-                    </div>
+                    <img id="image-preview" src="" class="h-24 rounded-lg border-2 border-blue-600">
                 </div>
 
-                <!-- Input Area -->
                 <div class="bg-white/5 p-2 rounded-2xl border border-white/10 flex flex-col gap-2">
                     <div class="flex items-center gap-2">
                         <label class="flex-shrink-0 cursor-pointer text-gray-400 p-2">
-                            <span class="text-xl">📎</span>
+                            <span>📎</span>
                             <input type="file" id="ai-image-input" class="hidden" accept="image/*" onchange="previewImage(this)">
                         </label>
-                        <textarea id="ai-msg" rows="1" placeholder="Type message..." class="flex-1 bg-transparent py-3 px-2 focus:outline-none text-white text-sm resize-none" oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
-                        <button onclick="sendToAI()" id="ai-send-btn" class="bg-blue-600 text-white p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest px-5">Send</button>
+                        <textarea id="ai-msg" rows="1" placeholder="Type command..." class="flex-1 bg-transparent py-3 text-white text-sm resize-none focus:outline-none"></textarea>
+                        <button onclick="sendToAI()" id="ai-send-btn" class="bg-blue-600 text-white px-5 py-3 rounded-xl font-bold uppercase text-[10px]">Send</button>
                     </div>
                 </div>
             </section>
 
-            <!-- Other Sections (Placeholders for UI) -->
             <section id="sec-email" class="tab-sec hidden flex-1">
-                <h2 class="cyber-font text-xl font-bold text-white mb-6">EMAIL AUDIT</h2>
+                <h2 class="cyber-font text-xl font-bold text-white mb-6">📧 EMAIL AUDIT</h2>
                 <input type="email" id="target-email" placeholder="email@target.com" class="w-full bg-black/60 border border-white/10 p-4 rounded-xl text-blue-400 mono outline-none mb-4">
                 <button onclick="checkEmail()" class="w-full cyber-btn py-4 rounded-xl">Check Reputation</button>
                 <div id="email-result" class="mt-4 bg-black/40 p-4 rounded-2xl border border-white/5 mono text-[10px] h-40 overflow-auto">Result: -</div>
             </section>
-
-            <section id="sec-social" class="tab-sec hidden flex-1">
-                <h2 class="cyber-font text-xl font-bold text-white mb-6">OSINT SEARCH</h2>
-                <div class="flex gap-2 mb-4">
-                    <input type="text" id="social-query" placeholder="Username/Phone" class="flex-1 bg-black/60 border border-white/10 p-4 rounded-xl text-white outline-none">
-                    <button onclick="searchSocial()" class="cyber-btn px-6 rounded-xl text-xs">Search</button>
-                </div>
-                <div class="text-[10px] text-gray-500 italic">Performing deep search on indexed social platforms...</div>
-            </section>
-
         </main>
     </div>
 
-    <script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // CONFIGURATION
         const CONFIG = {
-            apiKey: "", 
+            /** * 🔴 [PENTING] MASUKKAN GEMINI API KEY ANDA DI SINI! 🔴
+             * Contoh: apiKey: "AIzaSy..." 
+             */
+            apiKey: "AIzaSyDINRKcVKNFIrxWUoyeSg9R03IYCHGR_DU", 
+            /** 🔴 [PENTING] MASUKKAN GEMINI API KEY ANDA DI ATAS! 🔴 */
+
             ABSTRACT_PHONE_KEY: "23ed5b5d4b6f407495cea0dce6aa140a",
             ABSTRACT_EMAIL_KEY: "fa6b55dfb18f4e5fbbea2aabd8bcb6d5"
         };
 
+        // Firebase Initialization
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mazki-v3-pro';
+
+        let currentUser = null;
         let currentBase64Image = null;
 
-        function auth() {
+        // Auth Process
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth Error:", err);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-status').innerText = "Encrypted Connection: " + user.uid.substring(0, 8);
+                document.getElementById('user-status').classList.replace('text-gray-500', 'text-green-500');
+                listenToChat();
+            }
+        });
+
+        initAuth();
+
+        // UI Logic
+        window.auth = () => {
             const val = document.getElementById('key-input').value;
             if(val === "Kolkinajah12") {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-dashboard').classList.remove('hidden');
-                nav('loc');
+                window.nav('loc');
             } else {
                 const err = document.getElementById('auth-error');
                 err.style.opacity = "1";
                 setTimeout(() => err.style.opacity = "0", 2000);
             }
-        }
+        };
+        document.getElementById('auth-btn').onclick = window.auth;
 
-        function nav(id) {
+        window.nav = (id) => {
             document.querySelectorAll('.tab-sec').forEach(s => s.classList.add('hidden'));
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('bg-white/10', 'text-white');
-                b.style.borderColor = "transparent";
-            });
-            
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-white/10', 'text-white'));
             document.getElementById('sec-' + id).classList.remove('hidden');
-            const btn = document.getElementById('btn-' + id);
-            btn.classList.add('bg-white/10', 'text-white');
-            btn.style.borderColor = id === 'ai' ? '#00f2ff' : '#ff0000';
-            
-            // Auto scroll nav for mobile
-            if (window.innerWidth < 768) {
-                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
+            document.getElementById('btn-' + id).classList.add('bg-white/10', 'text-white');
+        };
+
+        // Firestore Chat Sync
+        function listenToChat() {
+            if (!currentUser) return;
+            const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'chats'));
+            onSnapshot(q, (snapshot) => {
+                const chatContainer = document.getElementById('ai-chat');
+                chatContainer.innerHTML = "";
+                const docs = snapshot.docs.sort((a, b) => a.data().timestamp - b.data().timestamp);
+                docs.forEach(doc => {
+                    const data = doc.data();
+                    const bubble = data.role === 'user' ? 'user-bubble' : 'ai-bubble';
+                    const label = data.role === 'user' ? 'OPERATOR' : 'MAZKI_AI';
+                    chatContainer.innerHTML += `
+                        <div class="${bubble}">
+                            <span class="text-[8px] opacity-50 block mb-1 uppercase">${label}</span>
+                            ${data.text}
+                            ${data.img ? `<br><img src="data:image/png;base64,${data.img}" class="h-24 rounded-lg mt-2 ${data.role === 'user' ? 'ml-auto' : ''}">` : ''}
+                        </div>`;
+                });
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, (err) => console.error("Firestore Error:", err));
         }
 
-        function previewImage(input) {
+        // Feature Logic
+        window.previewImage = (input) => {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = (e) => {
                     currentBase64Image = e.target.result.split(',')[1];
                     document.getElementById('image-preview').src = e.target.result;
                     document.getElementById('upload-preview-container').classList.remove('hidden');
                 };
                 reader.readAsDataURL(input.files[0]);
             }
-        }
+        };
 
-        function clearImage() {
+        window.sendToAI = async () => {
+            const msgInput = document.getElementById('ai-msg');
+            const text = msgInput.value;
+            if (!text && !currentBase64Image) return;
+
+            // Save to Firestore
+            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'chats'), {
+                role: 'user',
+                text: text,
+                img: currentBase64Image || null,
+                timestamp: serverTimestamp()
+            });
+
+            const tempText = text;
+            const tempImg = currentBase64Image;
+            msgInput.value = "";
             currentBase64Image = null;
-            document.getElementById('ai-image-input').value = "";
             document.getElementById('upload-preview-container').classList.add('hidden');
-        }
 
-        async function startTracking() {
+            // Call AI
+            if (!CONFIG.apiKey) {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'chats'), {
+                    role: 'ai',
+                    text: "❌ ERROR: API KEY belum diisi di bagian CONFIG. Silakan buka kode dan isi variabel apiKey.",
+                    timestamp: serverTimestamp()
+                });
+                return;
+            }
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${CONFIG.apiKey}`;
+                const payload = {
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: tempText || "Analisa ini." },
+                            ...(tempImg ? [{ inlineData: { mimeType: "image/png", data: tempImg } }] : [])
+                        ]
+                    }],
+                    systemInstruction: { parts: [{ text: "Kamu adalah Mazki AI. Jawab dengan cerdas, teknis, dan keren dalam Bahasa Indonesia." }] }
+                };
+
+                const resp = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await resp.json();
+                const aiText = result.candidates[0].content.parts[0].text;
+
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'chats'), {
+                    role: 'ai',
+                    text: aiText,
+                    timestamp: serverTimestamp()
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        window.startTracking = async () => {
             const phone = document.getElementById('target-phone').value;
             const res = document.getElementById('loc-result');
-            if(!phone) return;
-            res.innerHTML = "> Initiating signal trace...";
+            res.innerHTML = "> Inisialisasi pelacakan sinyal...";
             try {
                 const resp = await fetch(`https://phoneintelligence.abstractapi.com/v1/?api_key=${CONFIG.ABSTRACT_PHONE_KEY}&phone=62${phone}`);
                 const data = await resp.json();
                 res.innerHTML = `<pre class="whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>`;
-            } catch (e) { res.innerHTML = "Tracing failed. Check connection."; }
-        }
+            } catch (e) { res.innerHTML = "Tracing failed."; }
+        };
 
-        async function checkEmail() {
+        window.checkEmail = async () => {
             const email = document.getElementById('target-email').value;
             const res = document.getElementById('email-result');
-            if(!email) return;
-            res.innerHTML = "> Scanning databases...";
+            res.innerHTML = "> Scanning breaches...";
             try {
                 const resp = await fetch(`https://emailreputation.abstractapi.com/v1/?api_key=${CONFIG.ABSTRACT_EMAIL_KEY}&email=${email}`);
                 const data = await resp.json();
                 res.innerHTML = `<pre class="whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>`;
             } catch (e) { res.innerHTML = "Scan error."; }
-        }
-
-        function searchSocial() {
-            const q = document.getElementById('social-query').value;
-            if(!q) return;
-            window.open(`https://www.google.com/search?q=site:instagram.com OR site:facebook.com OR site:twitter.com "${q}"`, '_blank');
-        }
-
-        async function sendToAI() {
-            const msgInput = document.getElementById('ai-msg');
-            const msg = msgInput.value;
-            const chat = document.getElementById('ai-chat');
-            const btn = document.getElementById('ai-send-btn');
-            
-            if(!msg && !currentBase64Image) return;
-
-            chat.innerHTML += `<div class="user-bubble">
-                <span class="text-[8px] block text-gray-500 mb-1 uppercase tracking-tighter">Operator_Input</span>
-                ${msg ? msg.replace(/\n/g, '<br>') : ''}
-                ${currentBase64Image ? '<br><img src="data:image/png;base64,'+currentBase64Image+'" class="h-24 rounded-lg ml-auto mt-2 border border-white/20">' : ''}
-            </div>`;
-            
-            const tempMsg = msg;
-            const tempImg = currentBase64Image;
-            
-            msgInput.value = "";
-            msgInput.style.height = 'auto';
-            clearImage();
-            btn.disabled = true;
-            btn.innerText = "...";
-            chat.scrollTop = chat.scrollHeight;
-
-            try {
-                const isImageGen = tempMsg.toLowerCase().includes("buatkan gambar") || 
-                                  tempMsg.toLowerCase().includes("ilustrasi") || 
-                                  tempMsg.toLowerCase().includes("simulasi");
-
-                if (isImageGen) {
-                    await generateAIImage(tempMsg, chat);
-                } else {
-                    await callGemini(tempMsg, tempImg, chat);
-                }
-            } catch (e) {
-                chat.innerHTML += `<div class="text-red-500 mt-2 text-[10px]">> SYS_ERROR: Gagal menghubungi modul saraf AI.</div>`;
-            }
-
-            btn.disabled = false;
-            btn.innerText = "Send";
-            chat.scrollTop = chat.scrollHeight;
-        }
-
-        async function callGemini(text, base64, chat) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${CONFIG.apiKey}`;
-            
-            let contents = [];
-            if (base64) {
-                contents = [{
-                    role: "user",
-                    parts: [
-                        { text: text || "Analisa gambar ini." },
-                        { inlineData: { mimeType: "image/png", data: base64 } }
-                    ]
-                }];
-            } else {
-                contents = [{
-                    role: "user",
-                    parts: [{ text: text }]
-                }];
-            }
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: contents,
-                    systemInstruction: {
-                        parts: [{ text: "Kamu adalah 'Mazki AI', pakar Red Team dan Senior Developer. Jawab dengan gaya bicara yang keren, teknis, tapi tetap bersahabat dalam Bahasa Indonesia. Gunakan format Markdown untuk baris kode." }]
-                    }
-                })
-            });
-
-            const data = await response.json();
-            const aiResponse = data.candidates[0].content.parts[0].text;
-            
-            const formatted = aiResponse
-                .replace(/```([\s\S]*?)```/g, '<pre class="bg-black/80 p-3 border border-blue-900/30 rounded-xl my-2 overflow-x-auto text-[10px]">$1</pre>')
-                .replace(/\n/g, '<br>');
-
-            chat.innerHTML += `<div class="ai-bubble">
-                <span class="text-[8px] text-blue-500 font-bold block mb-1">MAZKI_NEURAL_OUT</span>
-                ${formatted}
-            </div>`;
-        }
-
-        async function generateAIImage(prompt, chat) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${CONFIG.apiKey}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ instances: { prompt: prompt }, parameters: { sampleCount: 1 } })
-            });
-
-            const result = await response.json();
-            const imageUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-
-            chat.innerHTML += `<div class="ai-bubble">
-                <span class="text-[8px] text-blue-500 font-bold block mb-1">IMAGEN_SERVICE_OUT</span>
-                Simulasi visual siap:
-                <br><img src="${imageUrl}" class="w-full rounded-xl mt-3 border border-blue-600/30">
-            </div>`;
-        }
+        };
     </script>
 </body>
 </html>
